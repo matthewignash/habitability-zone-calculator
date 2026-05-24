@@ -259,6 +259,64 @@
   .badge-bad { background: #f3d3d0; color: var(--bad); }
   .badge-muted { background: #e9e4d3; color: var(--muted); }
 
+  /* Framework panel + 5-field trace */
+  .panel + .panel { margin-top: 16px; }
+  .panel-sub-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 10px 0;
+    font-style: italic;
+  }
+  .field-list {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 6px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .field-list dt {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding-top: 2px;
+  }
+  .field-list dd {
+    margin: 0;
+  }
+
+  /* Flag notes (tidal locking, stellar activity) */
+  .flag-notes {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .callout {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--muted);
+  }
+  .callout.warn {
+    background: #fff4dc;
+    border-left-color: var(--warn);
+  }
+  .callout .callout-title {
+    font-weight: 700;
+    color: var(--warn);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+  }
+
   .drawer-backdrop {
     position: fixed;
     inset: 0;
@@ -422,6 +480,7 @@
           <option value="earthlike" selected>Earth-like (N₂/O₂ + GHGs, 1 bar)</option>
           <option value="thickco2">Thick CO₂ (Venus-like, 92 bar)</option>
           <option value="h2he">H₂/He thick (gas giant, 1000 bar)</option>
+          <option value="unknown">Unknown / not measured</option>
         </select>
       </div>
     </div>
@@ -497,6 +556,56 @@
           <div class="trace" id="trace-inhz"></div>
         </details>
       </div>
+    </div>
+
+    <div class="panel" aria-label="Habitability framework">
+      <h2 class="panel-heading">Habitability framework</h2>
+      <p class="panel-sub-note">Six criteria, each MEETS / PARTIAL / FAILS / UNCERTAIN. Click any row to see the 5-field reasoning. Mirrors the Habitability Framework Template you fill in Block 7.</p>
+      <div class="outputs" id="framework">
+        <details class="output-row" data-criterion="water">
+          <summary>
+            <span class="label">Liquid water</span>
+            <span class="value" id="fw-water">—</span>
+          </summary>
+          <div class="trace" id="fwt-water"></div>
+        </details>
+        <details class="output-row" data-criterion="atm">
+          <summary>
+            <span class="label">Atmosphere</span>
+            <span class="value" id="fw-atm">—</span>
+          </summary>
+          <div class="trace" id="fwt-atm"></div>
+        </details>
+        <details class="output-row" data-criterion="temp">
+          <summary>
+            <span class="label">Temperature</span>
+            <span class="value" id="fw-temp">—</span>
+          </summary>
+          <div class="trace" id="fwt-temp"></div>
+        </details>
+        <details class="output-row" data-criterion="mag">
+          <summary>
+            <span class="label">Magnetic field</span>
+            <span class="value" id="fw-mag">—</span>
+          </summary>
+          <div class="trace" id="fwt-mag"></div>
+        </details>
+        <details class="output-row" data-criterion="energy">
+          <summary>
+            <span class="label">Energy source</span>
+            <span class="value" id="fw-energy">—</span>
+          </summary>
+          <div class="trace" id="fwt-energy"></div>
+        </details>
+        <details class="output-row" data-criterion="orbit">
+          <summary>
+            <span class="label">Stable orbit</span>
+            <span class="value" id="fw-orbit">—</span>
+          </summary>
+          <div class="trace" id="fwt-orbit"></div>
+        </details>
+      </div>
+      <div class="flag-notes" id="flag-notes"></div>
     </div>
   </section>
 
@@ -606,11 +715,12 @@
   };
 
   const ATMS = {
-    none:      { deltaT: 0,   pressure: 0,     label: 'None / vacuum' },
-    thinco2:   { deltaT: 5,   pressure: 0.006, label: 'Thin CO₂ (Mars-like)' },
-    earthlike: { deltaT: 33,  pressure: 1.0,   label: 'Earth-like (N₂/O₂ + GHGs)' },
-    thickco2:  { deltaT: 500, pressure: 92,    label: 'Thick CO₂ (Venus-like)' },
-    h2he:      { deltaT: 200, pressure: 1000,  label: 'H₂/He thick' },
+    none:      { deltaT: 0,    pressure: 0,     label: 'None / vacuum' },
+    thinco2:   { deltaT: 5,    pressure: 0.006, label: 'Thin CO₂ (Mars-like)' },
+    earthlike: { deltaT: 33,   pressure: 1.0,   label: 'Earth-like (N₂/O₂ + GHGs)' },
+    thickco2:  { deltaT: 500,  pressure: 92,    label: 'Thick CO₂ (Venus-like)' },
+    h2he:      { deltaT: 200,  pressure: 1000,  label: 'H₂/He thick' },
+    unknown:   { deltaT: null, pressure: null,  label: 'Unknown / not measured' },
   };
 
   const BASELINES = {
@@ -635,7 +745,10 @@
     return tStar * Math.sqrt(rStarM / (2 * dM)) * Math.pow(1 - albedo, 0.25);
   }
 
-  function tSurfaceK(tEq, atmKey) { return tEq + ATMS[atmKey].deltaT; }
+  function tSurfaceK(tEq, atmKey) {
+    const dt = ATMS[atmKey].deltaT;
+    return dt === null ? null : tEq + dt;
+  }
   function gravityRatio(m, r) { return m / (r * r); }
 
   function gravityBandFor(g) {
@@ -659,15 +772,16 @@
   }
 
   function atmosphereRetention(g, tSurf, atmKey) {
-    if (atmKey === 'none') return null;
+    if (atmKey === 'none' || atmKey === 'unknown') return null;
     const band = gravityBandFor(g);
     let row = RETENTION_TABLE[band].slice();
-    const shifted = tSurf > 500;
+    const shifted = tSurf !== null && tSurf > 500;
     if (shifted) row = shiftBandDown(row);
     return { H2: row[0], H2O: row[1], N2O2: row[2], CO2: row[3], band, shifted };
   }
 
   function waterPhase(t, p) {
+    if (t === null || p === null) return 'Unknown';
     if (t < 273) return 'Frozen';
     if (t <= 373) return p >= 0.1 ? 'Liquid' : 'Sublimation';
     return p >= 50 ? 'Supercritical' : 'Gaseous';
@@ -703,11 +817,13 @@
 
   // ─── Formatting helpers ─────────────────────────────────────
   function fmtK(k) {
+    if (k === null) return 'Unknown';
     const c = k - 273.15;
     return k.toFixed(0) + ' K (' + (c >= 0 ? '+' : '') + c.toFixed(0) + '°C)';
   }
 
-  function retentionSummary(retention) {
+  function retentionSummary(retention, atmKey) {
+    if (atmKey === 'unknown') return 'Unknown';
     if (retention === null) return 'No atmosphere';
     const gases = { H2: 'H₂', H2O: 'H₂O', N2O2: 'N₂/O₂', CO2: 'CO₂' };
     const yes = [], marg = [], no = [];
@@ -725,9 +841,9 @@
   }
 
   function badgeClassFor(status) {
-    if (status === 'Yes' || status === 'Likely' || status === 'Liquid') return 'badge-ok';
-    if (status === 'Marginal' || status === 'Sublimation') return 'badge-warn';
-    if (status === 'No' || status === 'Unlikely' || status === 'Supercritical') return 'badge-bad';
+    if (status === 'MEETS' || status === 'Yes' || status === 'Likely' || status === 'Liquid') return 'badge-ok';
+    if (status === 'PARTIAL' || status === 'Marginal' || status === 'Sublimation') return 'badge-warn';
+    if (status === 'FAILS' || status === 'No' || status === 'Unlikely' || status === 'Supercritical') return 'badge-bad';
     return 'badge-muted';
   }
 
@@ -787,8 +903,8 @@
   function renderOutputs(r) {
     setText('out-teq', fmtK(r.tEq));
     setText('out-tsurf', fmtK(r.tSurf));
-    setBadge('out-water', r.water, r.water);
-    setText('out-atm', retentionSummary(r.retention));
+    setBadge('out-water', r.water === 'Unknown' ? 'UNCERTAIN' : r.water, r.water);
+    setText('out-atm', retentionSummary(r.retention, state.atm));
     setBadge('out-mag', r.magnetic, r.magnetic);
     setText('out-hz', r.hz.inner.toFixed(3) + ' – ' + r.hz.outer.toFixed(3) + ' AU');
     setBadge('out-inhz', r.inHz ? 'Yes' : 'No', r.inHz ? 'Yes' : 'No');
@@ -818,6 +934,16 @@
   }
 
   function buildTsurfParts(r) {
+    if (r.tSurf === null) {
+      return [
+        { kind: 'text', value: 'Atmosphere is unknown — greenhouse adjustment cannot be computed.' },
+        { kind: 'br' },
+        { kind: 'text', value: 'T_eq = ' + r.tEq.toFixed(0) + ' K is the no-atmosphere bound; actual surface temperature depends on the atmosphere we do not yet have data on.' },
+        { kind: 'br' },
+        { kind: 'text', value: '→ ' },
+        { kind: 'result', value: 'Unknown' },
+      ];
+    }
     return [
       { kind: 'code', value: 'T_surface ≈ T_eq + ΔT_greenhouse' },
       { kind: 'br' },
@@ -842,6 +968,14 @@
   }
 
   function buildWaterParts(r) {
+    if (r.tSurf === null || r.atm.pressure === null) {
+      return [
+        { kind: 'text', value: 'T_surface and pressure both depend on atmospheric data we do not have.' },
+        { kind: 'br' },
+        { kind: 'text', value: '→ ' },
+        { kind: 'result', value: 'Unknown' },
+      ];
+    }
     return [
       { kind: 'text', value: 'At T = ' + r.tSurf.toFixed(0) + ' K and pressure = ' + r.atm.pressure + ' bar:' },
       { kind: 'br' },
@@ -877,6 +1011,9 @@
   }
 
   function buildAtmParts(r) {
+    if (state.atm === 'unknown') {
+      return [{ kind: 'text', value: 'Atmosphere is unknown / not measured. Retention is not computable until atmospheric composition is known.' }];
+    }
     if (r.retention === null) {
       return [{ kind: 'text', value: 'No atmosphere selected → retention not applicable.' }];
     }
@@ -942,11 +1079,215 @@
     renderTraceTo('trace-inhz', buildInHzParts(r));
   }
 
+  // ─── Flags (per charter §7.6, §7.7) ─────────────────────────
+  function isMClass(starKey) { return starKey === 'M3V' || starKey === 'M5V'; }
+
+  function computeFlags(r) {
+    const tidalLocking = isMClass(state.star) && state.distance <= 0.5 * r.hz.outer;
+    const stellarActivity = isMClass(state.star) && r.magnetic !== 'Likely';
+    return { tidalLocking, stellarActivity };
+  }
+
+  // ─── Framework (6 criteria, 4-state verdicts, 5-field traces) ─
+  // Verdicts: 'MEETS' / 'PARTIAL' / 'FAILS' / 'UNCERTAIN'
+
+  function verdictWater(r) {
+    if (state.atm === 'unknown') return 'UNCERTAIN';
+    if (r.water === 'Liquid') return 'MEETS';
+    if (r.water === 'Sublimation') return 'PARTIAL';
+    if (r.water === 'Frozen' && state.mass >= 0.3) return 'PARTIAL';
+    return 'FAILS';
+  }
+
+  function verdictAtmosphere(r, flags) {
+    if (state.atm === 'unknown') return 'UNCERTAIN';
+    if (state.atm === 'none') return 'FAILS';
+    if (state.atm === 'thinco2') return 'PARTIAL';
+    const noCount = r.retention ? Object.values({ H2: r.retention.H2, H2O: r.retention.H2O, N2O2: r.retention.N2O2, CO2: r.retention.CO2 }).filter(v => v === 'No').length : 0;
+    let v = noCount === 0 ? 'MEETS' : 'PARTIAL';
+    if (v === 'MEETS' && flags.stellarActivity) v = 'PARTIAL';
+    return v;
+  }
+
+  function verdictTemperature(r, flags) {
+    if (state.atm === 'unknown' || r.tSurf === null) return 'UNCERTAIN';
+    const t = r.tSurf;
+    let v;
+    if (t >= 273 && t <= 373) v = 'MEETS';
+    else if ((t >= 200 && t < 273) || (t > 373 && t <= 500)) v = 'PARTIAL';
+    else v = 'FAILS';
+    if (v === 'MEETS' && flags.tidalLocking) v = 'PARTIAL';
+    return v;
+  }
+
+  function verdictMagnetic(r) {
+    if (r.magnetic === 'Likely') return 'MEETS';
+    if (r.magnetic === 'Marginal') return 'PARTIAL';
+    return 'FAILS';
+  }
+
+  function verdictEnergy() {
+    const isGorK = state.star === 'G2V' || state.star === 'K2V';
+    const age = state.age;
+    if (age < 0.5 || age > 12) return 'FAILS';
+    if (isGorK && age >= 1 && age <= 10) return 'MEETS';
+    return 'PARTIAL';
+  }
+
+  function verdictOrbit() {
+    return state.age >= 0.5 ? 'MEETS' : 'PARTIAL';
+  }
+
+  function computeFramework(r, flags) {
+    return [
+      { key: 'water',  label: 'Liquid water',   verdict: verdictWater(r),               fields: fieldsWater(r) },
+      { key: 'atm',    label: 'Atmosphere',     verdict: verdictAtmosphere(r, flags),   fields: fieldsAtmosphere(r, flags) },
+      { key: 'temp',   label: 'Temperature',    verdict: verdictTemperature(r, flags),  fields: fieldsTemperature(r, flags) },
+      { key: 'mag',    label: 'Magnetic field', verdict: verdictMagnetic(r),            fields: fieldsMagnetic(r) },
+      { key: 'energy', label: 'Energy source',  verdict: verdictEnergy(),               fields: fieldsEnergy() },
+      { key: 'orbit',  label: 'Stable orbit',   verdict: verdictOrbit(),                fields: fieldsOrbit() },
+    ];
+  }
+
+  // ─── 5-field content per criterion ───────────────────────────
+  function fieldsWater(r) {
+    const detect = state.atm === 'unknown'
+      ? 'Atmospheric composition unknown — surface temperature and pressure cannot be computed, so water phase is unknown.'
+      : 'T_surface + atmospheric pressure → water-phase lookup (§3.4). Current: T_surf = ' + (r.tSurf !== null ? r.tSurf.toFixed(0) + ' K' : '—') + ', P = ' + (r.atm.pressure !== null ? r.atm.pressure + ' bar' : '—') + ' → ' + r.water + '.';
+    return {
+      why: 'Life as we know it requires liquid solvent for cell chemistry. Water is the universal solvent on Earth.',
+      detect: detect,
+      earth: 'T_surf = 288 K, P = 1.0 bar → Liquid (the baseline against which everything else is measured).',
+      fail: 'Frozen at T < 273 K with insufficient internal heat (Mars); supercritical at T > 373 K and P ≥ 50 bar (Venus); sublimation if pressure < 0.1 bar (Mars surface).',
+    };
+  }
+
+  function fieldsAtmosphere(r, flags) {
+    let detect;
+    if (state.atm === 'unknown') {
+      detect = 'Atmospheric composition unknown — cannot evaluate.';
+    } else if (state.atm === 'none') {
+      detect = 'No atmosphere selected → criterion FAILS.';
+    } else {
+      detect = 'Atmosphere = ' + r.atm.label + '. Retention via gravity-band lookup (§3.3); per-gas results in the computed-outputs panel above.';
+      if (flags.stellarActivity) {
+        detect += ' §7.7 stellar-activity modifier: M-dwarf host + magnetic field not Likely → downgrade MEETS to PARTIAL (UV stripping concern).';
+      }
+    }
+    return {
+      why: 'An atmosphere holds heat, shields from radiation, and sustains the chemistry that biology runs on. Per §7.4, non-Earth atmospheres can also be habitable in principle — not just Earth-like N₂/O₂.',
+      detect: detect,
+      earth: 'Earth-like N₂/O₂ + GHGs at 1 bar; all four gas classes retained; magnetic field protects from solar wind stripping.',
+      fail: 'No atmosphere (Mercury, our Moon); thin atmosphere insufficient for liquid water (Mars); atmosphere lost to stellar wind or UV (Mars after magnetic field collapse, and a real concern for M-dwarf planets like Proxima b).',
+    };
+  }
+
+  function fieldsTemperature(r, flags) {
+    let detect;
+    if (state.atm === 'unknown' || r.tSurf === null) {
+      detect = 'T_surface requires atmospheric composition (greenhouse adjustment) — atmosphere is unknown.';
+    } else {
+      detect = 'T_surface = T_eq + ΔT_greenhouse = ' + r.tSurf.toFixed(0) + ' K. Verdict: ' + verdictTemperature(r, flags) + '.';
+      if (flags.tidalLocking && verdictTemperature(r, flags) === 'PARTIAL') {
+        detect += ' §7.6 tidal-locking modifier: M-dwarf host + close orbit → likely tidally locked; even MEETS-range temperatures get downgraded to PARTIAL (day/night extremes are severe even when global mean is habitable).';
+      }
+    }
+    return {
+      why: 'Earth-like life requires temperatures where water is liquid and proteins remain folded — roughly 273–373 K. Extremophiles broaden this slightly but the core range is narrow.',
+      detect: detect,
+      earth: 'T_surf = 288 K (+15°C) — comfortably mid-range. Liquid water everywhere.',
+      fail: 'Below 200 K life chemistry stops; above 500 K proteins denature and atmospheres run away (Venus). Tidally-locked planets have huge day/night swings even with a "habitable" global mean.',
+    };
+  }
+
+  function fieldsMagnetic(r) {
+    return {
+      why: 'A magnetic field deflects the solar wind and protects atmospheres from stripping. Without one, even a thick atmosphere can be eroded over billions of years (Mars).',
+      detect: 'Mass + system age → §3.5 dynamo heuristic. Current: mass = ' + state.mass.toFixed(2) + ' M⊕, age = ' + state.age.toFixed(1) + ' Gyr → ' + r.magnetic + '.',
+      earth: 'Mass 1.0 M⊕, age 4.5 Gyr, active dynamo → Likely (35-65 μT at surface).',
+      fail: 'Small planets cool too fast (Mars dynamo died ~4.1 Gya). Old large planets eventually solidify. Venus has the mass and age but slow rotation prevents dynamo — a limitation v1 does not model.',
+    };
+  }
+
+  function fieldsEnergy() {
+    return {
+      why: 'The host star must provide stable energy over biological timescales (billions of years). Per §7.4, this includes both photosynthesis-friendly stars and stars old/stable enough to support chemosynthetic biospheres in subsurface oceans.',
+      detect: 'Star type = ' + state.star + ', system age = ' + state.age.toFixed(1) + ' Gyr → verdict from §4.5 rules.',
+      earth: 'G2V (Sun), 4.5 Gyr — main-sequence lifetime ~10 Gyr, well within stable range.',
+      fail: 'F-type stars have lifetimes ~3-4 Gyr (life may not have time to emerge). M-dwarfs flare frequently (Proxima c superflare delivered ~10× sterilizing dose). Very young or very old systems lack stable energy delivery.',
+    };
+  }
+
+  function fieldsOrbit() {
+    return {
+      why: 'Stable orbital geometry over Gyr timescales prevents catastrophic temperature swings and surface conditions from changing too fast for biology to adapt.',
+      detect: 'System age = ' + state.age.toFixed(1) + ' Gyr. v1 conservatively uses age only — anything ≥ 0.5 Gyr is treated as dynamically settled.',
+      earth: 'Stable orbit for 4.5 Gyr; low eccentricity (0.017); no chaotic interactions with other planets.',
+      fail: 'v1 does not model orbital eccentricity, planet-planet perturbations, or stellar binarity. Real failure modes include young chaotic systems (< 0.1 Gyr), highly eccentric orbits that cross the HZ for only part of the year, and unstable resonances in multi-planet systems.',
+    };
+  }
+
+  function buildFrameworkParts(criterion) {
+    const f = criterion.fields;
+    return [
+      { kind: 'fields-list', whyValue: f.why, detectValue: f.detect, earthValue: f.earth, failValue: f.fail },
+    ];
+  }
+
+  function renderFrameworkRow(criterion) {
+    const badgeId = 'fw-' + criterion.key;
+    const traceId = 'fwt-' + criterion.key;
+    setBadge(badgeId, criterion.verdict, criterion.verdict);
+
+    const target = document.getElementById(traceId);
+    clearChildren(target);
+
+    const dl = el('dl', { class: 'field-list' });
+    const fieldPairs = [
+      ['Why it matters', criterion.fields.why],
+      ['How to detect', criterion.fields.detect],
+      ['Earth\'s value', criterion.fields.earth],
+      ['Where it fails', criterion.fields.fail],
+    ];
+    fieldPairs.forEach(([label, value]) => {
+      dl.appendChild(el('dt', { text: label }));
+      dl.appendChild(el('dd', { text: value }));
+    });
+    target.appendChild(dl);
+  }
+
+  function renderFramework(criteria) {
+    criteria.forEach(renderFrameworkRow);
+  }
+
+  function renderFlags(flags) {
+    const container = document.getElementById('flag-notes');
+    clearChildren(container);
+
+    if (flags.tidalLocking) {
+      const note = el('div', { class: 'callout warn' });
+      note.appendChild(el('div', { class: 'callout-title', text: '🔒 Tidal locking likely' }));
+      note.appendChild(txt('M-dwarf host star + close orbit (within ½ of HZ outer edge). One face always toward the star. Temperature criterion downgraded one step — the terminator zone may be habitable but day/night extremes are severe across the rest of the surface.'));
+      container.appendChild(note);
+    }
+
+    if (flags.stellarActivity) {
+      const note = el('div', { class: 'callout warn' });
+      note.appendChild(el('div', { class: 'callout-title', text: '⚡ Stellar activity concern' }));
+      note.appendChild(txt('M-dwarf hosts produce frequent UV/X-ray flares. Without a strong magnetic field, atmospheric stripping is a real concern over Gyr timescales. Atmosphere criterion downgraded even when retention math passes.'));
+      container.appendChild(note);
+    }
+  }
+
   function update() {
     renderInputReadouts();
     const r = computeAll();
+    const flags = computeFlags(r);
+    const framework = computeFramework(r, flags);
     renderOutputs(r);
     renderTraces(r);
+    renderFramework(framework);
+    renderFlags(flags);
   }
 
   // ─── Event wiring ───────────────────────────────────────────

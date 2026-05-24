@@ -2,23 +2,29 @@
 
 > **Purpose:** Living status doc. Charter is in `CLAUDE.md` — do NOT modify after build starts. Update this file at the end of each work session.
 
-**Last updated:** 2026-05-24 (v0.1 shipped — Phase 1 Physics core + UI skeleton; acceptance tests 1–5 pass)
+**Last updated:** 2026-05-24 (v0.2 shipped — Phase 2 Framework readout · UNCERTAIN handling · tidal-locking + stellar-activity flags)
 
 ---
 
 ## TL;DR — pick up here
 
-**v0.1 is live in the repo.** Single-file `habitability-zone-calculator.html` with 7 input sliders/dropdowns, 7 computed outputs (all with click-to-expand traces showing the calculation in plain English), Earth/Mars/Venus baseline buttons, and a full "Show assumptions" drawer. "This is a model" banner + AI involvement disclosure present per §7.8.
+**v0.2 is live.** The Habitability Framework panel renders below the computed outputs with all 6 criteria (Liquid water, Atmosphere, Temperature, Magnetic field, Energy source, Stable orbit). Each row shows a MEETS / PARTIAL / FAILS / UNCERTAIN badge and click-expands to reveal the 5-field reasoning (Why it matters / How to detect / Earth's value / Where it fails) — mirroring the Habitability Framework Template students fill in Block 7. UNCERTAIN propagation works via a new "Unknown / not measured" Atmosphere option. Tidal-locking and stellar-activity flags surface in callout notes below the framework and modify the relevant criterion verdicts per §7.6 / §7.7.
 
-**Acceptance tests 1–5 verified.** Earth (T_eq=255, T_surf=288, all 6/6 ≈ MEETS), Mars (T_eq=210, T_surf=215, frozen + magnetic Unlikely), Venus (T_eq=232, T_surf=732, supercritical water — the key teaching test), Earth-at-Venus-distance (T_eq rises to 300, T_surf to 333), Earth-no-atmosphere (T_surf collapses to T_eq=255, water freezes).
+**Acceptance tests verified (manual + logic spot-check):**
+- Test 1 (Earth): 6/6 MEETS ✓
+- Test 2 (Mars): Liquid water FAILS, Atmosphere PARTIAL, Temperature PARTIAL, Magnetic FAILS, Energy MEETS, Orbit MEETS — the ~2/2/2 split charter §10 expects ✓
+- Test 3 (Venus — key teaching test): Liquid water FAILS, Atmosphere PARTIAL, Temperature FAILS — 3 habitability-critical criteria all degraded even though planet is near HZ ✓
+- Tests 4 + 5 (Earth@Venus-distance, Earth-no-atmosphere): Framework shifts predictably
+- New UNCERTAIN test (atmosphere=Unknown): Liquid water + Atmosphere + Temperature all show UNCERTAIN; other 3 criteria still resolve from physics
+- New tidal-locking test (M5V + 0.02 AU): callout appears, Temperature steps down
+- New stellar-activity test (M5V + low mass forcing Unlikely magnetic): callout appears, Atmosphere steps down
 
-The next session should start **Phase 2 — Framework readout**:
-1. Re-read `CLAUDE.md` §4 Mode 1, §5 (hover-to-trace 5-field mapping), §7 (guardrails 3, 6, 7), and §10 (12-preset table).
-2. Add a "Framework readout" panel below the computed outputs. 6 default criteria (Liquid water, Atmosphere, Temperature, Magnetic field, Energy source, Stable orbit) per the §5 mockup.
-3. Implement 4-state coloring (MEETS / PARTIAL / FAILS / UNCERTAIN). UNCERTAIN appears whenever atmospheric composition is "unknown" (this hooks into Phase 3 presets).
-4. Implement the 5-field hover-to-trace per §5 amendment — each framework row exposes name / why it matters / how to detect / Earth's value / where this criterion can fail.
-5. Implement tidal-locking and stellar-activity flags (§7.6, §7.7) — will be hooks for Phase 3 presets.
-6. Verify acceptance test #3 (Venus baseline) now shows mostly FAILS even though planet is in/near HZ — the key teaching scenario.
+The next session should start **Phase 3 — Exoplanet presets + Compare mode + Export**:
+1. Build out the full 12-preset list from CLAUDE.md §10 (8 student-choice candidates + Earth/Mars/Venus + Kepler-22 b worked-example). Replace the 3 baseline buttons with a preset dropdown.
+2. Add Compare mode — side-by-side Earth + Mars + chosen exoplanet (or any 3 planets) in parallel columns. Same framework readout for each.
+3. Add Export — JSON or printable HTML including all inputs, computed outputs, the "Show assumptions" content, and the new "For your AI Documentation Template" subsection per the audit-phase §4 amendment.
+4. Wire URL parameters for teacher-side preloading (`?preset=trappist1e&compare=earth,mars`).
+5. Run acceptance tests 6, 7, 8, 9 from §11 — Kepler-22 b UNCERTAIN handling, TRAPPIST-1 e tidal-locking + PARTIAL atmosphere, Compare-mode parallel columns, Export round-trip.
 
 ---
 
@@ -41,9 +47,12 @@ Six surgical edits to `CLAUDE.md` after auditing against the as-built Unit 1 (`h
 - `README.md` — project overview.
 - `BUILD_PROGRESS.md` — this file.
 - `.gitignore` — `.DS_Store`, `node_modules/`, `*.log` (mirrors Plate Tectonics).
-- **`habitability-zone-calculator.html` (v0.1)** — single-file simulator, Phase 1 complete. Vanilla HTML/CSS/JS. ~700 lines. Includes:
+- **`habitability-zone-calculator.html` (v0.2)** — single-file simulator, Phases 1 + 2 complete. Vanilla HTML/CSS/JS. ~1370 lines. Includes:
   - 7 input sliders/dropdowns (mass, radius, albedo, distance, star type, atmosphere, age)
-  - 7 computed outputs, each as a `<details>` row that expands to show the calculation in plain English with current numbers substituted (hover-to-trace per §5)
+  - **Atmosphere dropdown** includes "Unknown / not measured" option to surface UNCERTAIN (Phase 2)
+  - 7 computed outputs, each as a `<details>` row with click-to-expand traces showing the calculation in plain English with current numbers substituted (hover-to-trace per §5)
+  - **Habitability framework panel** (Phase 2) — 6 criteria (Liquid water, Atmosphere, Temperature, Magnetic field, Energy source, Stable orbit) each with MEETS/PARTIAL/FAILS/UNCERTAIN badge and 5-field hover-to-trace (Why it matters / How to detect / Earth's value / Where it fails)
+  - **Tidal-locking + stellar-activity flags** (Phase 2) — automatic callout notes when M-class host star + close orbit (tidal locking) or M-class + non-Likely magnetic field (stellar activity) is detected; criterion verdicts downgraded per §7.6 / §7.7
   - 3 baseline buttons: Load Earth / Load Mars / Load Venus (NOT the full 12-preset system — Phase 3)
   - "Show assumptions" drawer with all 6 formulas, 4 lookup tables, star defaults, and physical constants
   - "This is a model" banner with AI involvement disclosure
@@ -64,12 +73,12 @@ Six surgical edits to `CLAUDE.md` after auditing against the as-built Unit 1 (`h
 - ✅ "Show assumptions" panel (partial — additional models and primary-source citations land by v1).
 - ✅ Acceptance tests 1–5 verified (Earth, Mars, Venus baselines + Earth@Venus-distance + Earth-no-atm).
 
-### Phase 2 — Framework readout
-- 5-7 framework criteria displayed with 4-state coloring (MEETS / PARTIAL / FAILS / UNCERTAIN).
-- Hover-to-trace on framework rows exposes all 5 Template fields per §5.
-- Wire the framework criteria to the underlying computed outputs.
-- Implement the UNCERTAIN state for unknown atmospheric composition (per §7 guardrail #3).
-- Implement tidal-locking and stellar-activity flags (per §7 guardrails #6, #7).
+### Phase 2 — Framework readout ✅ COMPLETE
+- ✅ 6 framework criteria displayed with 4-state coloring (MEETS / PARTIAL / FAILS / UNCERTAIN).
+- ✅ Hover-to-trace on framework rows exposes all 5 Template fields per §5.
+- ✅ Wired the framework criteria to the underlying computed outputs.
+- ✅ Implemented the UNCERTAIN state for unknown atmospheric composition (per §7.3) via new "Unknown / not measured" Atmosphere dropdown option.
+- ✅ Implemented tidal-locking and stellar-activity flags (per §7.6, §7.7) with callout notes that explain the criterion downgrade.
 
 ### Phase 3 — Presets + Compare mode + Export
 - Load all 12 presets from §10 (8 student-choice exoplanets + Earth/Mars/Venus + Kepler-22 b worked-example).
