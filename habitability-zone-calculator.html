@@ -320,6 +320,25 @@
     border-left: 3px solid var(--accent);
     padding-left: 7px;
   }
+  .compare-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .compare-flags:empty { display: none; }
+  .compare-flag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #fff4dc;
+    border: 1px solid #f0c574;
+    color: var(--warn);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: help;
+  }
   .btn {
     border: 1px solid var(--line);
     border-radius: 6px;
@@ -821,6 +840,7 @@
     <div class="compare-actions">
       <button type="button" class="btn btn-primary" id="copy-compare">📋 Copy as JSON</button>
       <button type="button" class="btn btn-secondary" id="download-compare">💾 Download JSON</button>
+      <button type="button" class="btn btn-secondary" id="print-compare">📄 Print view</button>
       <span class="toast" id="toast" aria-live="polite"></span>
     </div>
 
@@ -848,6 +868,7 @@
           </optgroup>
         </select>
         <div class="compare-physics" id="compare-physics-0"></div>
+        <div class="compare-flags" id="compare-flags-0"></div>
         <div class="compare-criteria" id="compare-criteria-0"></div>
       </div>
       <div class="compare-column">
@@ -872,6 +893,7 @@
           </optgroup>
         </select>
         <div class="compare-physics" id="compare-physics-1"></div>
+        <div class="compare-flags" id="compare-flags-1"></div>
         <div class="compare-criteria" id="compare-criteria-1"></div>
       </div>
       <div class="compare-column">
@@ -896,6 +918,7 @@
           </optgroup>
         </select>
         <div class="compare-physics" id="compare-physics-2"></div>
+        <div class="compare-flags" id="compare-flags-2"></div>
         <div class="compare-criteria" id="compare-criteria-2"></div>
       </div>
     </div>
@@ -988,8 +1011,25 @@
     <p><code>G = 6.674 × 10⁻¹¹ m³/(kg·s²)</code> · <code>M⊕ = 5.972 × 10²⁴ kg</code> · <code>R⊕ = 6.371 × 10⁶ m</code> · <code>M☉ = 1.989 × 10³⁰ kg</code> · <code>R☉ = 6.957 × 10⁸ m</code> · <code>T☉ = 5778 K</code> · <code>L☉ = 3.828 × 10²⁶ W</code> · <code>1 AU = 1.496 × 10¹¹ m</code></p>
 
     <div class="footer-note">
-      <strong>v0.1 partial assumptions panel.</strong> Additional models (tidal locking, stellar activity, framework readout rules) and primary-source citations land by v1. Per the charter §7.8, this calculator was built with AI assistance — apply OPVL to it as you would to any source.
+      <strong>v0.4 partial assumptions panel.</strong> Additional models (e.g., orbital eccentricity, radiative-transfer greenhouse) and primary-source citations may land in future versions. Per the charter §7.8, this calculator was built with AI assistance — apply OPVL to it as you would to any source.
     </div>
+
+    <h3>Saved state</h3>
+    <p>Your inputs are saved in your browser only — never sent anywhere. Clear them below to start fresh from Earth defaults.</p>
+    <p><button class="btn btn-ghost" id="clear-saved-state" type="button">Clear saved state &amp; reload</button></p>
+
+    <h3>Teacher URL parameters</h3>
+    <p>You can preload the calculator to a specific scenario by adding these query strings to the URL. Useful for emailing class links or embedding in a launcher.</p>
+    <table>
+      <thead><tr><th>URL</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>?preset=trappist1e</code></td><td>Opens Explore mode with TRAPPIST-1 e loaded</td></tr>
+        <tr><td><code>?preset=kepler22b&amp;view=explore</code></td><td>Opens Explore with the Block 8 worked-example planet</td></tr>
+        <tr><td><code>?compare=earth,mars,trappist1e</code></td><td>Opens Compare mode with default Goldilocks loadout</td></tr>
+        <tr><td><code>?compare=earth,mars,k218b</code></td><td>Compare with K2-18 b as the chosen exoplanet</td></tr>
+      </tbody>
+    </table>
+    <p>Valid preset keys: <code>earth</code>, <code>mars</code>, <code>venus</code>, <code>trappist1e</code>, <code>proximab</code>, <code>k218b</code>, <code>kepler186f</code>, <code>kepler452b</code>, <code>lhs1140b</code>, <code>toi700d</code>, <code>gliese581d</code>, <code>kepler22b</code>. URL params override saved state.</p>
   </div>
 </aside>
 
@@ -1668,12 +1708,28 @@
     });
   }
 
+  function renderCompareFlags(slot, containerId) {
+    const target = document.getElementById(containerId);
+    clearChildren(target);
+    if (slot.flags.tidalLocking) {
+      const chip = el('span', { class: 'compare-flag-chip', text: '🔒 Tidal locking' });
+      chip.title = 'M-class host star + close orbit (within ½ of HZ outer edge). One face always toward the star. Temperature criterion downgraded one step.';
+      target.appendChild(chip);
+    }
+    if (slot.flags.stellarActivity) {
+      const chip = el('span', { class: 'compare-flag-chip', text: '⚡ Stellar activity' });
+      chip.title = 'M-dwarf hosts produce frequent UV/X-ray flares. Without a strong magnetic field, atmospheric stripping is a real concern. Atmosphere criterion downgraded even when retention math passes.';
+      target.appendChild(chip);
+    }
+  }
+
   function renderCompareView() {
     const slots = state.compareSlots.map(k => computeForSlot(k)).filter(Boolean);
     if (slots.length !== 3) return;
     slots.forEach((slot, idx) => {
       document.querySelector('[data-slot="' + idx + '"]').value = slot.presetKey;
       renderComparePhysics(slot, 'compare-physics-' + idx);
+      renderCompareFlags(slot, 'compare-flags-' + idx);
     });
     renderCompareCriteria(slots);
   }
@@ -1842,6 +1898,169 @@
     showToast('Downloaded.');
   }
 
+  // ─── Print view ────────────────────────────────────────────
+  const PRINT_CSS = [
+    '* { box-sizing: border-box; }',
+    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: #1f2a37; background: white; margin: 0; padding: 24px; font-size: 12px; line-height: 1.5; }',
+    'header { border-bottom: 2px solid #c9542d; padding-bottom: 12px; margin-bottom: 18px; }',
+    'header h1 { margin: 0; font-size: 20px; color: #1f2a37; }',
+    'header .meta { color: #5b6573; font-size: 11px; margin-top: 4px; }',
+    '.banner { background: #f4ddcf; padding: 8px 12px; border-radius: 4px; margin-bottom: 18px; font-size: 11px; }',
+    '.banner strong { color: #c9542d; }',
+    '.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }',
+    '.column { border: 1px solid #d9d4c4; border-radius: 8px; padding: 12px; page-break-inside: avoid; }',
+    '.column h2 { margin: 0 0 8px 0; font-size: 14px; color: #1f2a37; border-bottom: 1px solid #d9d4c4; padding-bottom: 6px; }',
+    '.section-label { text-transform: uppercase; font-size: 9px; letter-spacing: 0.4px; color: #5b6573; font-weight: 600; margin-top: 10px; margin-bottom: 4px; }',
+    '.kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 11px; }',
+    '.kv dt { color: #5b6573; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }',
+    '.kv dd { margin: 0; font-variant-numeric: tabular-nums; }',
+    '.flags { margin: 8px 0; display: flex; flex-wrap: wrap; gap: 4px; }',
+    '.flag-chip { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: #fff4dc; border: 1px solid #f0c574; color: #c9882d; font-weight: 600; }',
+    '.criteria { margin-top: 8px; }',
+    '.criterion { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 6px 8px; border-radius: 4px; font-size: 11px; align-items: center; }',
+    '.criterion.diverging { background: #f4ddcf; border-left: 2px solid #c9542d; padding-left: 6px; }',
+    '.badge { padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }',
+    '.badge-ok { background: #d8ebdf; color: #2e7d4f; }',
+    '.badge-warn { background: #f5e3c4; color: #c9882d; }',
+    '.badge-bad { background: #f3d3d0; color: #b3261e; }',
+    '.badge-muted { background: #e9e4d3; color: #5b6573; }',
+    'footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid #d9d4c4; color: #5b6573; font-size: 10px; }',
+    '@media print { body { padding: 12mm; } .banner { background: white; border: 1px solid #d9d4c4; } .column { page-break-inside: avoid; } }',
+  ].join(' ');
+
+  function buildPrintColumn(slot, isDiverging) {
+    const col = el('div', { class: 'column' });
+    col.appendChild(el('h2', { text: slot.preset.name }));
+
+    // Inputs section
+    col.appendChild(el('div', { class: 'section-label', text: 'Inputs' }));
+    const inputsDl = el('dl', { class: 'kv' });
+    const inputs = [
+      ['Host star', slot.r.star.name],
+      ['Mass', slot.preset.mass.toFixed(3) + ' M⊕'],
+      ['Radius', slot.preset.radius.toFixed(3) + ' R⊕'],
+      ['Albedo', slot.preset.albedo.toFixed(2)],
+      ['Distance', slot.preset.distance.toFixed(3) + ' AU'],
+      ['Atmosphere', slot.r.atm.label],
+      ['Age', slot.preset.age.toFixed(1) + ' Gyr'],
+    ];
+    inputs.forEach(([k, v]) => {
+      inputsDl.appendChild(el('dt', { text: k }));
+      inputsDl.appendChild(el('dd', { text: v }));
+    });
+    col.appendChild(inputsDl);
+
+    // Computed outputs
+    col.appendChild(el('div', { class: 'section-label', text: 'Computed outputs' }));
+    const outDl = el('dl', { class: 'kv' });
+    const outs = [
+      ['T_eq', slot.r.tEq === null ? 'Unknown' : slot.r.tEq.toFixed(0) + ' K'],
+      ['T_surface', fmtKShort(slot.r.tSurf)],
+      ['Water phase', slot.r.water],
+      ['Magnetic field', slot.r.magnetic],
+      ['HZ', slot.r.hz.inner.toFixed(3) + '–' + slot.r.hz.outer.toFixed(3) + ' AU'],
+      ['In HZ?', slot.r.inHz ? 'Yes' : 'No'],
+    ];
+    outs.forEach(([k, v]) => {
+      outDl.appendChild(el('dt', { text: k }));
+      outDl.appendChild(el('dd', { text: v }));
+    });
+    col.appendChild(outDl);
+
+    // Flags
+    if (slot.flags.tidalLocking || slot.flags.stellarActivity) {
+      const flagsDiv = el('div', { class: 'flags' });
+      if (slot.flags.tidalLocking) flagsDiv.appendChild(el('span', { class: 'flag-chip', text: '🔒 Tidal locking' }));
+      if (slot.flags.stellarActivity) flagsDiv.appendChild(el('span', { class: 'flag-chip', text: '⚡ Stellar activity' }));
+      col.appendChild(flagsDiv);
+    }
+
+    // Framework
+    col.appendChild(el('div', { class: 'section-label', text: 'Habitability framework' }));
+    const critContainer = el('div', { class: 'criteria' });
+    slot.framework.forEach((c, idx) => {
+      const row = el('div', { class: 'criterion' + (isDiverging[idx] ? ' diverging' : '') });
+      row.appendChild(el('span', { text: c.label }));
+      row.appendChild(el('span', { class: 'badge ' + badgeClassFor(c.verdict), text: c.verdict }));
+      critContainer.appendChild(row);
+    });
+    col.appendChild(critContainer);
+
+    return col;
+  }
+
+  function buildPrintViewDocument(slots) {
+    const doc = document.implementation.createHTMLDocument('Goldilocks Report — Habitability Comparison');
+    const head = doc.head;
+    const meta = doc.createElement('meta');
+    meta.setAttribute('charset', 'UTF-8');
+    head.appendChild(meta);
+    const style = doc.createElement('style');
+    style.textContent = PRINT_CSS;
+    head.appendChild(style);
+
+    const body = doc.body;
+
+    // Header
+    const header = doc.createElement('header');
+    const h1 = doc.createElement('h1');
+    h1.textContent = 'Goldilocks Report — Habitability Comparison';
+    header.appendChild(h1);
+    const metaDiv = doc.createElement('div');
+    metaDiv.className = 'meta';
+    metaDiv.textContent = slots.map(s => s.preset.name).join(' · ') + ' — generated ' + new Date().toISOString().slice(0, 10);
+    header.appendChild(metaDiv);
+    body.appendChild(header);
+
+    // Banner
+    const banner = doc.createElement('div');
+    banner.className = 'banner';
+    const strong = doc.createElement('strong');
+    strong.textContent = 'This is a model.';
+    banner.appendChild(strong);
+    banner.appendChild(doc.createTextNode(' The math is simplified. Apply OPVL to it as you would to any source. Built with AI assistance — see the calculator\'s Show Assumptions panel and the github.com/matthewignash/habitability-zone-calculator source for the full set of formulas and limitations.'));
+    body.appendChild(banner);
+
+    // Compute divergence per criterion row
+    const verdictsByRow = [0, 1, 2, 3, 4, 5].map(i => slots.map(s => s.framework[i].verdict));
+    const diverging = verdictsByRow.map(vs => new Set(vs).size > 1);
+
+    // 3-column grid — built locally because el() is the calculator doc's helper
+    const grid = doc.createElement('div');
+    grid.className = 'grid';
+    slots.forEach(slot => {
+      // Import the el-built nodes into the new doc
+      const localNode = buildPrintColumn(slot, diverging);
+      grid.appendChild(doc.importNode(localNode, true));
+    });
+    body.appendChild(grid);
+
+    // Footer
+    const footer = doc.createElement('footer');
+    footer.textContent = 'Generated by Habitability Zone Calculator v0.4 · github.com/matthewignash/habitability-zone-calculator';
+    body.appendChild(footer);
+
+    return doc;
+  }
+
+  function openPrintView() {
+    const slots = state.compareSlots.map(k => computeForSlot(k)).filter(Boolean);
+    if (slots.length !== 3) {
+      showToast('Compare mode required.');
+      return;
+    }
+    const doc = buildPrintViewDocument(slots);
+    const w = window.open('', '_blank');
+    if (!w) {
+      showToast('Popup blocked — allow popups and retry.');
+      return;
+    }
+    w.document.replaceChild(
+      w.document.importNode(doc.documentElement, true),
+      w.document.documentElement
+    );
+  }
+
   function update() {
     renderInputReadouts();
     const r = computeAll();
@@ -1851,6 +2070,7 @@
     renderTraces(r);
     renderFramework(framework);
     renderFlags(flags);
+    saveState();
   }
 
   // ─── Event wiring ───────────────────────────────────────────
@@ -1921,6 +2141,91 @@
     document.getElementById('drawer').setAttribute('aria-hidden', 'true');
   }
 
+  // ─── Persistence (localStorage) ────────────────────────────
+  const STORAGE_KEY = 'hzc.v04.state';
+  const STORAGE_VERSION = '0.4';
+
+  function saveState() {
+    try {
+      const payload = {
+        version: STORAGE_VERSION,
+        view: state.view,
+        preset: state.preset,
+        inputs: {
+          mass: state.mass, radius: state.radius, albedo: state.albedo,
+          distance: state.distance, star: state.star, atm: state.atm, age: state.age,
+        },
+        compareSlots: state.compareSlots.slice(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      // Storage unavailable (private mode, quota); fail silently
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (data.version !== STORAGE_VERSION) return false;
+      if (data.inputs) Object.assign(state, data.inputs);
+      if (typeof data.preset === 'string') state.preset = data.preset;
+      if (data.view === 'compare' || data.view === 'explore') state.view = data.view;
+      if (Array.isArray(data.compareSlots) && data.compareSlots.length === 3) {
+        const allValid = data.compareSlots.every(k => PRESETS[k]);
+        if (allValid) state.compareSlots = data.compareSlots.slice();
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function clearSavedState() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+    window.location.reload();
+  }
+
+  // ─── URL params ────────────────────────────────────────────
+  function validatePresetKey(k) {
+    return k && PRESETS[k] ? k : null;
+  }
+
+  function validateCompareList(s) {
+    if (!s) return null;
+    const parts = s.split(',').map(x => x.trim());
+    const valid = parts.map(p => validatePresetKey(p)).filter(Boolean);
+    if (valid.length === 0) return null;
+    // Pad with defaults if fewer than 3
+    const defaults = ['earth', 'mars', 'trappist1e'];
+    while (valid.length < 3) valid.push(defaults[valid.length]);
+    return valid.slice(0, 3);
+  }
+
+  function parseURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    const presetKey = validatePresetKey(params.get('preset'));
+    const compareList = validateCompareList(params.get('compare'));
+    let view = params.get('view');
+    if (view !== 'explore' && view !== 'compare') view = null;
+    // Apply: URL wins over localStorage
+    if (presetKey) {
+      const p = PRESETS[presetKey];
+      state.mass = p.mass; state.radius = p.radius; state.albedo = p.albedo;
+      state.distance = p.distance; state.star = p.star; state.atm = p.atm; state.age = p.age;
+      state.preset = presetKey;
+      state.view = view || 'explore';
+    }
+    if (compareList) {
+      state.compareSlots = compareList;
+      state.view = view || 'compare';
+    }
+    if (view && !presetKey && !compareList) {
+      state.view = view;
+    }
+  }
+
   // ─── Init ───────────────────────────────────────────────────
   function init() {
     bindSlider('mass', 'mass');
@@ -1943,11 +2248,14 @@
       sel.addEventListener('change', e => {
         state.compareSlots[slotIdx] = e.target.value;
         renderCompareView();
+        saveState();
       });
     });
 
     document.getElementById('copy-compare').addEventListener('click', copyCompareJSON);
     document.getElementById('download-compare').addEventListener('click', downloadCompareJSON);
+    document.getElementById('print-compare').addEventListener('click', openPrintView);
+    document.getElementById('clear-saved-state').addEventListener('click', clearSavedState);
 
     document.getElementById('open-assumptions').addEventListener('click', openDrawer);
     document.getElementById('open-assumptions').addEventListener('keydown', e => {
@@ -1957,7 +2265,15 @@
     document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
-    update();
+    // Restore from localStorage (if present + version matches), then apply URL params (which win)
+    loadState();
+    parseURLParams();
+    syncInputsFromState();
+    if (state.view === 'compare') {
+      setView('compare');
+    } else {
+      update();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);
