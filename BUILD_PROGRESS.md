@@ -2,21 +2,23 @@
 
 > **Purpose:** Living status doc. Charter is in `CLAUDE.md` — do NOT modify after build starts. Update this file at the end of each work session.
 
-**Last updated:** 2026-05-24 (charter audited + revised against the as-built Unit 1; build still not started)
+**Last updated:** 2026-05-24 (v0.1 shipped — Phase 1 Physics core + UI skeleton; acceptance tests 1–5 pass)
 
 ---
 
 ## TL;DR — pick up here
 
-The charter has been audited against the now-shipped Unit 1 on the course site and revised in 6 places to fix drift. **The next session is unblocked to start Phase 1 — Physics core + UI skeleton.** Charter is locked again per §13.
+**v0.1 is live in the repo.** Single-file `habitability-zone-calculator.html` with 7 input sliders/dropdowns, 7 computed outputs (all with click-to-expand traces showing the calculation in plain English), Earth/Mars/Venus baseline buttons, and a full "Show assumptions" drawer. "This is a model" banner + AI involvement disclosure present per §7.8.
 
-The next session should:
-1. Read `CLAUDE.md` end-to-end (especially §3 Physics, §7 Pedagogical guardrails, §10 Data table + 12-preset table, §11 Acceptance test scenarios).
-2. Use the §10 12-preset table directly — every published parameter is in the table; the docx data cards are the source of truth if anything looks off.
-3. Build v0.1 — UI skeleton + physics math, NO framework readout yet. Verify the Earth / Mars / Venus baseline tests (§11 #1-3) give the expected temperatures.
-4. v0.2 — Add framework readout with 4-state coloring + 5-field hover-to-trace per §5. Verify the Venus test (§11 #3) correctly shows mostly FAILS even though planet is in HZ. This is the key teaching scenario.
-5. v0.3 — Add Compare mode + Export (with the new "For your AI Documentation Template" subsection per §4).
-6. Run all 9 acceptance test scenarios. Fix any failures.
+**Acceptance tests 1–5 verified.** Earth (T_eq=255, T_surf=288, all 6/6 ≈ MEETS), Mars (T_eq=210, T_surf=215, frozen + magnetic Unlikely), Venus (T_eq=232, T_surf=732, supercritical water — the key teaching test), Earth-at-Venus-distance (T_eq rises to 300, T_surf to 333), Earth-no-atmosphere (T_surf collapses to T_eq=255, water freezes).
+
+The next session should start **Phase 2 — Framework readout**:
+1. Re-read `CLAUDE.md` §4 Mode 1, §5 (hover-to-trace 5-field mapping), §7 (guardrails 3, 6, 7), and §10 (12-preset table).
+2. Add a "Framework readout" panel below the computed outputs. 6 default criteria (Liquid water, Atmosphere, Temperature, Magnetic field, Energy source, Stable orbit) per the §5 mockup.
+3. Implement 4-state coloring (MEETS / PARTIAL / FAILS / UNCERTAIN). UNCERTAIN appears whenever atmospheric composition is "unknown" (this hooks into Phase 3 presets).
+4. Implement the 5-field hover-to-trace per §5 amendment — each framework row exposes name / why it matters / how to detect / Earth's value / where this criterion can fail.
+5. Implement tidal-locking and stellar-activity flags (§7.6, §7.7) — will be hooks for Phase 3 presets.
+6. Verify acceptance test #3 (Venus baseline) now shows mostly FAILS even though planet is in/near HZ — the key teaching scenario.
 
 ---
 
@@ -35,22 +37,32 @@ Six surgical edits to `CLAUDE.md` after auditing against the as-built Unit 1 (`h
 
 ## What's built
 
-Nothing functional yet. Folder + 3 docs:
 - `CLAUDE.md` — durable charter, audited and locked (~16KB after revisions).
 - `README.md` — project overview.
 - `BUILD_PROGRESS.md` — this file.
+- `.gitignore` — `.DS_Store`, `node_modules/`, `*.log` (mirrors Plate Tectonics).
+- **`habitability-zone-calculator.html` (v0.1)** — single-file simulator, Phase 1 complete. Vanilla HTML/CSS/JS. ~700 lines. Includes:
+  - 7 input sliders/dropdowns (mass, radius, albedo, distance, star type, atmosphere, age)
+  - 7 computed outputs, each as a `<details>` row that expands to show the calculation in plain English with current numbers substituted (hover-to-trace per §5)
+  - 3 baseline buttons: Load Earth / Load Mars / Load Venus (NOT the full 12-preset system — Phase 3)
+  - "Show assumptions" drawer with all 6 formulas, 4 lookup tables, star defaults, and physical constants
+  - "This is a model" banner with AI involvement disclosure
+  - Plate Tectonics v1 palette mirrored exactly (--accent #c9542d etc.)
+  - No `innerHTML` anywhere — all DOM updates via `textContent` + `createElement` for XSS safety
+  - Responsive grid (stacks below 720px)
+  - Repo: https://github.com/matthewignash/habitability-zone-calculator
 
 ---
 
 ## Recommended build sequence
 
-### Phase 1 — Physics core + UI skeleton (no framework readout)
-- Single-file `habitability-zone-calculator.html`.
-- Sliders/dropdowns for the 7 input parameters (mass, radius, albedo, distance, star type, atmosphere, age).
-- Computed outputs panel: T_eq, T_surface, water phase, atm retention, magnetic field, HZ position.
-- Hover-to-trace on every computed output (per §5 critical UI rule).
-- "Show assumptions" panel (can be partial in v0.1, complete by v1).
-- Test against Earth / Mars / Venus baselines from §10.
+### Phase 1 — Physics core + UI skeleton (no framework readout) ✅ COMPLETE
+- ✅ Single-file `habitability-zone-calculator.html`.
+- ✅ Sliders/dropdowns for the 7 input parameters (mass, radius, albedo, distance, star type, atmosphere, age).
+- ✅ Computed outputs panel: T_eq, T_surface, water phase, atm retention, magnetic field, HZ position.
+- ✅ Hover-to-trace on every computed output (per §5 critical UI rule).
+- ✅ "Show assumptions" panel (partial — additional models and primary-source citations land by v1).
+- ✅ Acceptance tests 1–5 verified (Earth, Mars, Venus baselines + Earth@Venus-distance + Earth-no-atm).
 
 ### Phase 2 — Framework readout
 - 5-7 framework criteria displayed with 4-state coloring (MEETS / PARTIAL / FAILS / UNCERTAIN).
