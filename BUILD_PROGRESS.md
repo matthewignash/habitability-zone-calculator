@@ -2,23 +2,22 @@
 
 > **Purpose:** Living status doc. Charter is in `CLAUDE.md` — do NOT modify after build starts. Update this file at the end of each work session.
 
-**Last updated:** 2026-05-24 (v0.4 shipped — polish complete: localStorage save/load · URL params · printable HTML · Compare flag chips)
+**Last updated:** 2026-05-25 (Phase 5 ✅ — calculator wired into hs-earth-env-site)
 
 ---
 
 ## TL;DR — pick up here
 
-**v0.4 is live.** Polish phase complete — the standalone calculator is now feature-complete per CLAUDE.md §8 acceptance criteria. Four polish additions on top of v0.3:
+**The calculator is live on the course site.** Phase 5 (site integration) is complete:
 
-1. **localStorage save/load** — inputs + preset + view + Compare slots persist across page refreshes. New "Clear saved state" button in the assumptions drawer. Data never leaves the browser.
-2. **URL parameters for teacher preloading** — `?preset=trappist1e`, `?compare=earth,mars,k218b`, `?view=compare` all work. URL wins over localStorage. Example teacher URLs documented in the assumptions drawer.
-3. **Printable HTML export** — new "📄 Print view" button in Compare mode opens a paper-friendly self-contained doc in a new tab. Students browser-Print → Save as PDF and include as a figure in their Goldilocks Report.
-4. **Compare-column flag chips** — tidal-locking + stellar-activity flags now surface inside each Compare column (not just in Explore mode), with hover-tooltips explaining the criterion downgrade.
+- **Sync script** added at `hs-earth-env-site/package.json`: `npm run sync-habitability` copies the calculator HTML into `src/assets/simulators/habitability/index.html` at build time.
+- **Launcher page** at `/units/unit-1/habitability-zone-calculator/` iframes the simulator and supports URL params passthrough (e.g. `?preset=kepler22b` propagates into the iframe).
+- **Block cross-links** in place: Block 4 (Scale of Cosmos — replaced placeholder Interact card), Block 6 (Choose Your Exoplanet — alongside Planet Hunter in Choice C), Block 7 (Habitability Framework — `?view=compare` deep link in Choice C), Block 8 (Drafting Day — Compare-mode export + `?preset=kepler22b` worked-example link in Choice C).
+- **Unit 1 landing** has a Habitability Zone Calculator card in the Resources panel.
 
-The next session is **Phase 5 — site integration into `hs-earth-env-site`**:
-1. Add a `sync-habitability` npm script in `hs-earth-env-site/package.json` (mirror `sync-simulator-v2` from Plate Tectonics) that copies `habitability-zone-calculator.html` into `src/assets/simulators/habitability/`.
-2. Build a launcher .njk page at `hs-earth-env-site/src/units/unit-1/habitability-zone-calculator.njk` that iframes the simulator. Match the Unit 3 tectonic-city-builder.njk launcher pattern.
-3. Link the launcher from the relevant Unit 1 blocks — strongest candidates are Block 4 (Scale of the Cosmos — first introduction), Block 6 (Choose Your Exoplanet — practical use), Block 7 (Habitability Framework — compare mode for Goldilocks Report), and Block 8 (Drafting Day — export to AI Documentation Template).
+The standalone calculator stays at v0.4. Future work that would benefit from a calculator-side commit: v2 features (e.g., radiative-transfer greenhouse, planetary rotation modeling for magnetic field), more presets, additional framework criteria. None are blocking; the calculator is feature-complete for v1 classroom use.
+
+The next session can pivot back to the site (e.g., Unit 2 skeleton) or to another simulator brief (Cauvery / Land Allocation / Energy Mix — all at v0-charter-only state).
 
 ---
 
@@ -91,10 +90,13 @@ Six surgical edits to `CLAUDE.md` after auditing against the as-built Unit 1 (`h
 - ✅ Printable HTML view in Compare mode (Print → Save as PDF supportable).
 - ✅ Compare-column flag chips for tidal-locking + stellar-activity, parallel to the Explore-mode callouts.
 
-### Phase 5 — Site integration (next)
-- ⏭️ `sync-habitability` npm script in `hs-earth-env-site/package.json`.
-- ⏭️ Unit 1 launcher .njk page that iframes the calculator.
-- ⏭️ Links from Unit 1 Blocks 4 / 6 / 7 / 8.
+### Phase 5 — Site integration ✅ COMPLETE
+- ✅ `sync-habitability` npm script in `hs-earth-env-site/package.json` copies the calculator HTML into `src/assets/simulators/habitability/index.html`.
+- ✅ Unit 1 launcher .njk page at `src/units/unit-1/habitability-zone-calculator.njk` with iframe + URL params passthrough.
+- ✅ Links from Unit 1 Blocks 4 (Interact card swap) / 6 (Choice C inline) / 7 (Choice C `?view=compare` deep link) / 8 (Choice C export workflow + `?preset=kepler22b`).
+- ✅ Unit 1 landing Resources panel has a Calculator card.
+- Live launcher: https://hs-earth-env-site.vercel.app/units/unit-1/habitability-zone-calculator/ (after Vercel auto-redeploy)
+- Site repo cross-link: https://github.com/matthewignash/hs-earth-env-site
 
 ### Phase 4 — Polish + tests + site integration
 - Save/load via localStorage.
